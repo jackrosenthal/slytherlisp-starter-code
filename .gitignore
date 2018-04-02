@@ -1,0 +1,28 @@
+__pycache__
+*.pyc
+dist
+build
+*.egg-info
+*.dist-info
+README.html
+submission.tar.bz2
+a.out
+/examples/carmichael
+
+# A couple of operating system files, really you should
+# setup a global gitignore (Google it) if you depend on
+# this... not all projects will have these listed.
+.DS_Store
+Thumbs.db
+.Trashes
+*.swp
+*.swo
+*.lock
+*~
+.netrwhist
+\#*\#
+/.emacs.desktop
+*.elc
+auto-save-list
+tramp
+.\#*
