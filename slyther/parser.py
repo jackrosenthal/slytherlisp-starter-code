@@ -15,6 +15,7 @@ from slyther.types import SExpression, Symbol, String, Quoted
 
 __all__ = ['tokenize', 'parse']
 
+
 def tokenize(code):
     r"""
     This is a *generator function* that splits a piece of code into
