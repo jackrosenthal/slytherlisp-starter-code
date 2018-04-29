@@ -1,4 +1,4 @@
-def repl(intepreter):
+def repl(interpreter):
     """
     Take an interpreter object and give a REPL on it. Should not return
     anything: just a user interface at the terminal. For example::
