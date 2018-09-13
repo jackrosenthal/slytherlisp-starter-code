@@ -10,13 +10,18 @@ SlytherLisp
    this value in various places.
 
 :Implemented By:
-   Your Name <youruser@mines.edu>
+   * Partner One <partnerone@Mines.EDU>
+   * Partner Two <partnertwo@Mines.EDU>
+   * Partner Three <partnerthree@Mines.EDU>
+
+.. Replace with the current deliverable you are working on. For example, if you
+   are submitting the first deliverable, this should be 1 (as shown).
+
 :Deliverable: 1
 
-SlytherLisp is a lexically-scoped Scheme-like Lisp dialect for the Language
-Design Project in CSCI-400. If you aren't familiar with Lisp, expressions are
-written in parentheses and are called s-expressions. For example, adding 3 and
-4 is written as::
+SlytherLisp is a lexically-scoped Scheme-like Lisp dialect for CSCI-400. Lisp
+dialects use s-expressions as their primary syntax structure, just like we have
+learned in class. For example, adding 3 and 4 is written as::
 
     (+ 3 4)
 
@@ -34,8 +39,8 @@ parentheses:
 
 For example, the ``define`` macro defines functions::
 
-    (define (f x y)
-        (* (+ x y) y))
+   (define (f x y)
+     (* (+ x y) y))
 
 In this case, we defined a function named ``f`` which takes arguments ``x`` and
 ``y`` and returns ``(x + y) * y``. It is necessary for ``define`` to be a macro
@@ -56,18 +61,16 @@ Getting Started with the Starter Code
 
 2. Install an editable copy of the application::
 
-        $ pip3 install -e . --user
+      $ python3.6 -m pip install -e . --user
 
-   * ``pip3`` is the tool used to install Python packages. On some systems, you
-     may need to use ``python3 -m pip`` instead. If that does not work, you
-     will need to install ``pip``, see this__ page for instructions on Linux.
+   or::
 
-     __ https://packaging.python.org/guides/installing-using-linux-tools/
+      $ python3.7 -m pip install -e . --user
 
-   * ``-e`` says to install an editable copy. If you omit this, you'll need to
+   - ``-e`` says to install an editable copy. If you omit this, you'll need to
      re-install every time you make changes.
 
-   * ``--user`` says to install for the local user only. This way you do not
+   - ``--user`` says to install for the local user only. This way you do not
      need to use ``sudo``. The binaries should end up in something like
      ``$HOME/.local/bin``: make sure this is in your ``PATH``.
 
@@ -75,6 +78,9 @@ Getting Started with the Starter Code
    program anywhere on your system. Confirm you can run the ``slyther``
    command (even though it may result in a ``NotImplementedError``). Check
    ``slyther --help`` for potential command line arguments.
+
+   - If you are still getting ``slyther: command not found``, please ask on
+     Piazza for help.
 
 4. Open up the files in the ``slyther`` directory and familiarize yourself with
    their structure.
@@ -86,33 +92,49 @@ Getting Started with the Starter Code
    - The functions typically have a description of how they should work at the
      top in a docstring. This docstring usually has doctests in it too: that
      is, those lines that start with ``>>>`` in the docstring are actually unit
-     tests as well! You are free to change these docstrings and the tests (and
-     running the tests on your code should reflect your changes), but the
-     grading script will run the original (unmodified) unit tests: so make sure
-     that your code works with the unit tests you were given.
+     tests as well! You are free to change these docstrings or remove as you
+     please.
 
    - You are free to implement helper functions, etc., as you need: in fact,
      this project would be very hard to do without doing so.
 
-   - If you change how a particular interface works in the application, leave
-     the original interface in, and have that call the modified interface. This
-     is how (you, and I) can test your code even if you change the application
-     structure.
+   - If you wish to change how a particular interface works in the application,
+     leave the original interface in, and have that call the modified
+     interface. This is how (you, and I) can test your code even if you change
+     the application structure.
 
 5. Start coding!
 
 Running Tests
 -------------
 
-To run the tests, type ``./run_tests.py`` from the base directory (where
-``README.rst`` is located). You will need to specify at least one of four
-flags: ``--d1``, ``--d2``, ``--d3``, or ``--tco``, which runs the tests for
-Deliverable 1, 2, 3, or tail call optimization.
+To run the tests, type ``pytest`` from the base directory (where ``README.rst``
+is located). You will need to specify at least one of four flags: ``--d1``,
+``--d2``, ``--d3``, or ``--d4``, which runs the tests for Deliverable 1, 2, 3,
+or 4. For example,
 
-When you run the tests, if it prints nothing and returns zero, this is good
-news: the tests ran as expected. If you would like to see each and every
-assertion that is being made (just so you know it's doing things), you can pass
-the ``--verbose`` or ``-v`` flag as well.
+Running D1 tests::
+
+   $ pytest --d1
+
+Running all tests::
+
+   $ pytest --d1 --d2 --d3 --d4
+
+.. warning::
+
+   Your grade is not solely based on unit tests. The instructor or grader
+   *will* perform additional testing on your code.
+
+Pretty Formatting
+~~~~~~~~~~~~~~~~~
+
+If you wish to show unit test results in your browser, a plugin for ``pytest``
+is available.
+
+https://pypi.org/project/pytest-html/
+
+I highly recommend this plugin to help make looking at the test results easier.
 
 Style Checking
 --------------
@@ -125,23 +147,19 @@ With ``flake8``, no news is good news as well. If you want to make sure it's
 working, add some bad style to your code for a second and see if it errors at
 you.
 
-A note on using Git and GitHub
-------------------------------
-
-I initialized a Git repository in this directory for you so it is easy to use a
-version control system as you work. If you choose to put this repository on a
-shared Git-instance (such as GitHub), please **make sure the repository is
-private!** This includes after you finish the course: you should not share your
-implementation with others.
-
-One advantage of using GitHub is that you can share your repository with me if
-you need help with something, I can pull your code and take a look.
-
-Using Git is optional.
-
 Submitting your Deliverables
 ----------------------------
 
-To make a ``.tar.bz2`` file for submission, type ``./make-submission.sh`` from
-the same directory this README is located in. Then, submit the ``.tar.bz2``
-file to Gradescope.
+1. Make sure all code for your submission is committed.
+
+2. Double check that step 1 is *actually* complete.
+
+3. Tag your deliverable using Git::
+
+      $ git tag d1-submission
+
+   (for later deliverables, substitute that ``1`` for the deliverable number)
+
+4. Type::
+
+      $ git push origin --tags

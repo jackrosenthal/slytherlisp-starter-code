@@ -17,6 +17,8 @@ def main():
         help='Run using PyPy (experimental and not required to work)')
     parser.add_argument(
         '--load',
+        action='append',
+        default=[],
         type=argparse.FileType('r'),
         help='Source code to evaluate before dropping to a REPL')
     parser.add_argument(
@@ -37,19 +39,29 @@ def main():
                   "for this feature to work.", file=sys.stderr)
             sys.exit(1)
 
+    # This is just an easy way to allow no exception catching when pdb
+    # is loaded. This allows the implementer to use python -m pdb and
+    # do easy post-mortem debugging.
     interp = Interpreter()
-    try:
+
+    def run(debug=False):
+        for f in args.load:
+            interp.exec(f.read())
         if args.source:
             interp.exec(args.source.read())
         else:
-            if args.load:
-                interp.exec(args.load.read())
             from slyther.repl import repl
-            repl(interp)
-    except KeyboardInterrupt:
-        sys.exit(1)
-    except Exception as e:
-        traceback.print_exc(limit=10, chain=False)
+            repl(interp, debug=debug)
+
+    if any(m in sys.modules.keys() for m in ('pdb', 'pudb')):
+        run(debug=True)
+    else:
+        try:
+            run()
+        except KeyboardInterrupt:
+            sys.exit(1)
+        except Exception:
+            traceback.print_exc(limit=10, chain=False)
 
 
 if __name__ == '__main__':

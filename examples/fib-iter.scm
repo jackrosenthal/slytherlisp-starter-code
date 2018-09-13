@@ -1,6 +1,6 @@
 #!/usr/bin/env slyther
-; If your interpreter features tail-call optimization,
-; you should not get a RecursionError with this example.
+; If your interpreter features tail-call optimization (for extra
+; credit) you should not get a RecursionError with this example.
 
 (define (print-fibs a b)
   (print a)

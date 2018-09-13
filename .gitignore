@@ -9,6 +9,13 @@ submission.tar.bz2
 a.out
 /examples/carmichael
 
+# Testing cache
+.hypothesis
+.pytest_cache
+
+# in case you generate an html test report
+report.html
+
 # A couple of operating system files, really you should
 # setup a global gitignore (Google it) if you depend on
 # this... not all projects will have these listed.

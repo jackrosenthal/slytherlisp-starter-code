@@ -2,9 +2,9 @@ import operator
 from functools import reduce
 from slyther.types import (BuiltinFunction, BuiltinMacro, Symbol,
                            UserFunction, SExpression, cons, String,
-                           ConsList)
+                           ConsList, NIL, LexicalVarStorage, ConsCell)
 from slyther.evaluator import lisp_eval
-from slyther.parser import tokenize, parse
+from slyther.parser import lex, parse
 from math import floor, ceil, sqrt
 
 
@@ -98,24 +98,24 @@ def floordiv(*args):
 
 
 # IO
-_print = BuiltinFunction(print)
-_input = BuiltinFunction(input)
+print_ = BuiltinFunction(print)
+input_ = BuiltinFunction(input)
 
 # Type Constructors
-_int = BuiltinFunction(int)
-_float = BuiltinFunction(float)
-symbol = BuiltinFunction(Symbol, 'symbol')
-string = BuiltinFunction(String, 'string')
+make_int = BuiltinFunction(int, 'make-integer')
+make_float = BuiltinFunction(float, 'make-float')
+make_symbol = BuiltinFunction(Symbol, 'make-symbol')
+make_string = BuiltinFunction(String, 'make-string')
 
 
 @BuiltinFunction('list')
-def _list(*args):
+def list_(*args) -> ConsList:
     """
     Create a ``ConsList`` from ``args``.
 
-    >>> _list(1, 2, 3)
+    >>> list_(1, 2, 3)
     (list 1 2 3)
-    >>> _list()
+    >>> list_()
     NIL
     """
     raise NotImplementedError("Deliverable 3")
@@ -127,18 +127,18 @@ gt = BuiltinFunction(operator.gt, '>')
 eq = BuiltinFunction(operator.eq, '=')
 le = BuiltinFunction(operator.le, '<=')
 ge = BuiltinFunction(operator.ge, '>=')
-_not = BuiltinFunction(operator.not_, 'not')
+not_ = BuiltinFunction(operator.not_, 'not')
 
 # arithmetic
 remainder = BuiltinFunction(operator.mod, 'remainder')
-_floor = BuiltinFunction(floor)
-_ceil = BuiltinFunction(ceil)
-_sqrt = BuiltinFunction(sqrt)
-_abs = BuiltinFunction(abs)
+floor_ = BuiltinFunction(floor)
+ceil_ = BuiltinFunction(ceil)
+sqrt_ = BuiltinFunction(sqrt)
+abs_ = BuiltinFunction(abs)
 expt = BuiltinFunction(operator.pow, 'expt')
 
 # string manipulation
-_format = BuiltinFunction(str.format)
+format_ = BuiltinFunction(str.format)
 split = BuiltinFunction(str.split)
 
 # cons cell functions
@@ -146,7 +146,7 @@ cons = BuiltinFunction(cons)
 
 
 @BuiltinFunction
-def car(cell):
+def car(cell: ConsCell):
     """
     Get the ``car`` of a cons cell.
     """
@@ -154,15 +154,23 @@ def car(cell):
 
 
 @BuiltinFunction
-def cdr(cell):
+def cdr(cell: ConsCell):
     """
     Get the ``cdr`` of a cons cell.
     """
     raise NotImplementedError("Deliverable 3")
 
 
+@BuiltinFunction('nil?')
+def is_nil(cell: ConsCell) -> bool:
+    """
+    Return ``True`` if the cell is ``NIL``, ``False`` otherwise.
+    """
+    raise NotImplementedError("Deliverable 3")
+
+
 @BuiltinMacro
-def define(se, stg):
+def define(se: SExpression, stg: LexicalVarStorage):
     """
     Define a variable or a function to a value, calling ``put`` on
     the storage::
@@ -183,14 +191,11 @@ def define(se, stg):
         that function's ``environ``, or recursion will not work!
 
     >>> from slyther.types import *
+    >>> from slyther.parser import lisp
+    >>> se = lisp('((twirl alpha beta) (print alpha) (print beta))')
     >>> name = Symbol('twirl')
-    >>> args = SExpression.from_iterable(
-    ...     map(Symbol, ['alpha', 'beta']))
-    >>> body = SExpression.from_iterable([
-    ...     SExpression.from_iterable(
-    ...         map(Symbol, ['print', 'alpha'])),
-    ...     SExpression.from_iterable(
-    ...         map(Symbol, ['print', 'beta']))])
+    >>> args = lisp('(alpha beta)')
+    >>> body = lisp('((print alpha) (print beta))')
     >>> stg = LexicalVarStorage({})
     >>> stg.put('NIL', NIL)
     >>> stg.put('define', define) # so that you can return a define if you want
@@ -198,8 +203,7 @@ def define(se, stg):
     >>> from slyther.evaluator import lisp_eval
     >>> lisp_eval(define(cons(cons(name, args), body), stg), stg)
     NIL
-    >>> lisp_eval(
-    ...     define(SExpression.from_iterable([Symbol('x'), 10]), stg), stg)
+    >>> lisp_eval(define(lisp('(x 10)'), stg), stg)
     NIL
     >>> stg[name].value
     (lambda (alpha beta) (print alpha) (print beta))
@@ -212,11 +216,11 @@ def define(se, stg):
         ...
     KeyError: 'x'
     """
-    raise NotImplementedError("Deliverable 3")
+    raise NotImplementedError("Deliverable 4")
 
 
 @BuiltinMacro('lambda')
-def lambda_func(se, stg):
+def lambda_func(se: SExpression, stg: LexicalVarStorage) -> UserFunction:
     """
     Define an anonymous function and return the ``UserFunction``
     object.
@@ -236,11 +240,11 @@ def lambda_func(se, stg):
     >>> f.environ['x'].value
     20
     """
-    raise NotImplementedError("Deliverable 3")
+    raise NotImplementedError("Deliverable 4")
 
 
 @BuiltinMacro('let')
-def let(se, stg):
+def let(se: SExpression, stg: LexicalVarStorage) -> SExpression:
     """
     The ``let`` macro binds variables to a local scope: the expressions
     inside the macro. Like a function, a ``let`` returns the last
@@ -255,20 +259,33 @@ def let(se, stg):
     In the example above, ``a`` was bound to whatever ``(+ f g)``
     evaluates to, b to ``11``, and ``c`` to ``12``.
 
-    There's a few ways to approach this, but my suggestion is to notice
-    how the above was equivalent to another expression::
+    Notice how the above was equivalent to another expression::
 
         ((lambda (a b c)
            (+ a (- b c))) (+ f g) 11 12)
 
-    No unit tests for this, as you are free to implement it any way it
-    works; just make sure the example code which uses ``let`` can run.
+    You should do a syntax translation from the input to something like that.
+
+    >>> from slyther.types import *
+    >>> from slyther.parser import lisp
+    >>> from slyther.evaluator import lisp_eval
+    >>> stg = LexicalVarStorage(
+    ...         {'let': Variable(let),
+    ...          'lambda': Variable(lambda_func),
+    ...          'print': Variable(print_),
+    ...          'x': Variable(10)})
+    >>> lisp_eval(lisp('(let ((x 20) (y 30)) (print x) (print y))'), stg)
+    20
+    30
+    NIL
+    >>> lisp_eval(Symbol('x'), stg)
+    10
     """
-    raise NotImplementedError("Deliverable 3")
+    raise NotImplementedError("Deliverable 4")
 
 
 @BuiltinMacro('if')
-def if_expr(se, stg):
+def if_expr(se: SExpression, stg: LexicalVarStorage):
     """
     An ``if`` expression looks like this::
 
@@ -282,11 +299,10 @@ def if_expr(se, stg):
           (print "x is greater than or equal to 10"))
 
     >>> from slyther.types import *
-    >>> se = SExpression.from_iterable(map(SExpression.from_iterable, [
-    ...     [Symbol('<'), Symbol('x'), 10],
-    ...     [Symbol('print'), String("x is less than 10")],
-    ...     [Symbol('print'), String("x is greater than or equal to 10")],
-    ... ]))
+    >>> from slyther.parser import lisp
+    >>> se = lisp('((< x 10)'
+    ...           ' (print "x is less than 10")'
+    ...           ' (print "x is greater than or equal to 10"))')
     >>> stg = LexicalVarStorage({})
     >>> stg.put('<', lt)
     >>> stg.put('x', 9)
@@ -296,11 +312,11 @@ def if_expr(se, stg):
     >>> if_expr(se, stg)
     (print "x is greater than or equal to 10")
     """
-    raise NotImplementedError("Deliverable 3")
+    raise NotImplementedError("Deliverable 4")
 
 
 @BuiltinMacro('cond')
-def cond(se, stg):
+def cond(se: SExpression, stg: LexicalVarStorage):
     """
     ``cond`` is similar to ``if``, but it lists a series of predicates
     and consequents, similar to how guards work in Haskell. For
@@ -313,9 +329,9 @@ def cond(se, stg):
           (#t (print "x >= 15")))
 
     >>> from slyther.types import *
-    >>> from slyther.parser import tokenize, parse
+    >>> from slyther.parser import lex, parse
     >>> def test_cond(x):
-    ...     expr = next(parse(tokenize('''
+    ...     expr = next(parse(lex('''
     ...         (cond
     ...           ((< x 5) (print "x < 5"))
     ...           ((< x 10) (print "5 <= x < 10"))
@@ -335,11 +351,11 @@ def cond(se, stg):
     >>> test_cond(15)
     (print "x >= 15")
     """
-    raise NotImplementedError("Deliverable 3")
+    raise NotImplementedError("Deliverable 4")
 
 
 @BuiltinMacro('and')
-def _and(se, stg):
+def and_(se: SExpression, stg: LexicalVarStorage):
     """
     Compute an ``and`` expression, like this::
 
@@ -354,60 +370,154 @@ def _and(se, stg):
     the previous are truthy, as your ``lisp_eval`` should eval it for
     you. This could be useful for tail call optimization.
 
-    No unit tests for this one, make sure it works on your own, or add
-    unit tests here.
+    >>> from slyther.types import *
+    >>> from slyther.parser import lisp
+    >>> from slyther.evaluator import lisp_eval
+    >>> stg = LexicalVarStorage(
+    ...         {'and': Variable(and_),
+    ...          '#f': Variable(Boolean(False)),
+    ...          '#t': Variable(Boolean(True)),
+    ...          'print': Variable(print_),
+    ...          '+': Variable(add),
+    ...          'x': Variable(0),
+    ...          'y': Variable(1),
+    ...          'z': Variable(2)})
+    >>> lisp_eval(lisp('(and #t (print (+ x y z)) #f)'), stg)
+    3
+    NIL
+    >>> lisp_eval(lisp('(and #f (print (+ x y z)) #f)'), stg)
+    #f
+    >>> lisp_eval(lisp('(and #t x (print (+ x y z)) y foo)'), stg)
+    0
+    >>> lisp_eval(lisp('(and (+ x y) y z)'), stg)
+    2
+    >>> lisp_eval(lisp('(and)'), stg)
+    NIL
     """
-    raise NotImplementedError("Deliverable 3")
+    raise NotImplementedError("Deliverable 4")
 
 
 @BuiltinMacro('or')
-def _or(se, stg):
+def or_(se: SExpression, stg: LexicalVarStorage):
     """
     Similar to ``and`` above, but compute an ``or`` instead. Return
     the first truthy value rather than falsy.
+
+    >>> from slyther.types import *
+    >>> from slyther.parser import lisp
+    >>> from slyther.evaluator import lisp_eval
+    >>> stg = LexicalVarStorage(
+    ...         {'or': Variable(or_),
+    ...          '#f': Variable(Boolean(False)),
+    ...          '#t': Variable(Boolean(True)),
+    ...          'print': Variable(print_),
+    ...          '+': Variable(add),
+    ...          'x': Variable(0),
+    ...          'y': Variable(1),
+    ...          'z': Variable(2)})
+    >>> lisp_eval(lisp('(or #t (print (+ x y z)) #f)'), stg)
+    #t
+    >>> lisp_eval(lisp('(or #f (print (+ x y z)) #f)'), stg)
+    3
+    #f
+    >>> lisp_eval(lisp('(or #f x (print (+ x y z)) y foo)'), stg)
+    3
+    1
+    >>> lisp_eval(lisp('(or (+ y -1) x z)'), stg)
+    2
+    >>> lisp_eval(lisp('(or)'), stg)
+    NIL
     """
-    raise NotImplementedError("Deliverable 3")
+    raise NotImplementedError("Deliverable 4")
 
 
 @BuiltinMacro('set!')
-def _set(se, stg):
+def setbang(se: SExpression, stg: LexicalVarStorage):
     """
-    Danger, danger, the assigment expression::
+    ``set!`` is the assigment macro. Unlike ``define``, ``set!`` **does not
+    create new variables.** Instead, it changes the value of existing
+    variables **only**. If given a variable which has not been defined,
+    it should raise a ``KeyError``.
+
+    For example::
 
         (set! <name> <value>)
 
     Should just eval ``value`` and call ``stg[name].set`` on it. Return
-    ``NIL``. Again, no unit tests, write your own if you wish.
+    ``NIL``.
+
+    >>> from slyther.types import *
+    >>> from slyther.parser import lisp
+    >>> stg = LexicalVarStorage({'foo': Variable(12), 'bar': Variable(15)})
+    >>> old_foo = stg['foo']
+    >>> setbang(lisp('(foo 15)'), stg)
+    NIL
+    >>> stg['foo'].value
+    15
+    >>> stg['foo'] is old_foo
+    True
+    >>> setbang(lisp('(baz 15)'), stg)
+    Traceback (most recent call last):
+        ...
+    KeyError: 'Undefined variable baz'
     """
-    raise NotImplementedError("Deliverable 3")
+    raise NotImplementedError("Deliverable 4")
 
 
 @BuiltinMacro('eval')
-def _eval(se, stg):
+def eval_(se: SExpression, stg: LexicalVarStorage):
     """
     ::
 
         (eval <expr>)
 
-    Evaluate ``expr``, if it produces a ``ConsList``, then upgrade
-    that ``ConsList`` to an ``SExpression`` and return it. Your
-    ``lisp_eval`` will take care of the rest.
+    Evaluate ``expr``, if it produces a ``ConsList``, then upgrade that
+    ``ConsList`` to an ``SExpression`` (recursively) and return it. Your
+    ``lisp_eval`` will take care of actually evaluating the expression,
+    as this is a macro.
+
+    >>> from slyther.types import *
+    >>> from slyther.parser import lisp
+    >>> from slyther.evaluator import lisp_eval
+    >>> stg = LexicalVarStorage(
+    ...         {'eval': Variable(eval_),
+    ...          '#t': Variable(Boolean(True)),
+    ...          'print': Variable(print_),
+    ...          'x': Variable(0),
+    ...          'y': Variable(1),
+    ...          'z': Variable(lisp("(print x)"))})
+    >>> lisp_eval(lisp("(eval '(print x))"), stg)
+    0
+    NIL
+    >>> lisp_eval(lisp("(eval ''(print x))"), stg)
+    (list print x)
+    >>> lisp_eval(lisp('(eval #t)'), stg)
+    #t
+    >>> lisp_eval(lisp("(eval '''#t)"), stg)
+    '#t
+    >>> lisp_eval(lisp("(eval 'y)"), stg)
+    1
+    >>> lisp_eval(lisp("(eval ''y)"), stg)
+    y
+    >>> lisp_eval(lisp("(eval z)"), stg)
+    0
+    NIL
     """
-    raise NotImplementedError("Deliverable 3")
+    raise NotImplementedError("Deliverable 4")
 
 
 @BuiltinFunction('parse')
-def _parse(code):
+def parse_string(code: String):
     """
-    ``code`` is a ``String`` containing a single thing once parsed,
-    such as an s-expression, or a symbol. Simply just tokenize it,
-    parse it and return it! Woo-hoo!
+    ``code`` is a ``String`` containing a single thing once parsed, such as an
+    s-expression, or a symbol. Simply just lex it, parse it and return it!
+    Woo-hoo!
 
     >>> from slyther.types import *
-    >>> _parse(String("(print x)"))
+    >>> parse_string(String("(print x)"))
     (list print x)
 
-    Note that the ``BuiltinFunction`` decorator takes care of
-    downgrading an ``SExpression`` to a ``ConsList`` for you.
+    Note that the ``BuiltinFunction`` decorator takes care of downgrading an
+    ``SExpression`` to a ``ConsList`` for you.
     """
-    raise NotImplementedError("Deliverable 3")
+    raise NotImplementedError("Deliverable 4")

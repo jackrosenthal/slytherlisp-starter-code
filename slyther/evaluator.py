@@ -1,11 +1,44 @@
 from slyther.types import (Quoted, NIL, SExpression, ConsList, Symbol,
-                           Macro, NilType)
+                           Macro, NilType, LexicalVarStorage)
 
 
-def lisp_eval(expr, stg):
+def lisp_eval(expr, stg: LexicalVarStorage):
     """
     Takes a **single** AST element (such as a SExpression, NIL, or
     number) and evaluates it, returning the result, if any.
+
+    Depending on what type ``expr`` is, the evaluation will be computed
+    differently:
+
+    +---------------------+-------------------------------------------------+
+    | If ``expr`` is a... | return...                                       |
+    +=====================+=================================================+
+    | ``NIL``             | ``NIL``                                         |
+    +---------------------+-------------------------------------------------+
+    | Quoted s-expression | A ``ConsList`` with each of the elements in the |
+    |                     | s-expression quoted and then ``lisp_eval``-ed.  |
+    +---------------------+-------------------------------------------------+
+    | Quoted non-SE       | The element unquoted.                           |
+    +---------------------+-------------------------------------------------+
+    | Symbol              | The value of the corresponding ``Variable`` in  |
+    |                     | the lexical variable storage (``stg``).         |
+    +---------------------+-------------------------------------------------+
+    | S-Expression        | ``lisp_eval`` the CAR and if that's a...        |
+    |                     |                                                 |
+    |                     | :Macro:                                         |
+    |                     |     call the macro with the unevaluated         |
+    |                     |     arguments and ``stg`` and return the        |
+    |                     |     ``lisp_eval``-ed result.                    |
+    |                     | :Function:                                      |
+    |                     |     ``lisp_eval`` each of the arguments and     |
+    |                     |     call the function. Return the result.       |
+    |                     | :Something else:                                |
+    |                     |     Raise a ``TypeError``.                      |
+    +---------------------+-------------------------------------------------+
+    | Something else      | Return it as is.                                |
+    +---------------------+-------------------------------------------------+
+
+    Here is some examples:
 
     >>> from slyther.types import *
     >>> empty_stg = LexicalVarStorage({})
@@ -24,11 +57,9 @@ def lisp_eval(expr, stg):
     x
     >>> lisp_eval(Symbol('NIL'), some_stg)
     NIL
-    >>> from slyther.parser import tokenize, parse
+    >>> from slyther.parser import lisp
     >>> def test(code):                 # test function
-    ...     return lisp_eval(
-    ...         expr=next(parse(tokenize(code))),
-    ...         stg=some_stg)
+    ...     return lisp_eval(lisp(code), some_stg)
     >>> test("3")
     3
     >>> test("'(1 2 3)")

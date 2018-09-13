@@ -1,6 +1,6 @@
 #!/usr/bin/env slyther
 (define (read-float prompt)
-  (float (input prompt)))
+  (make-float (input prompt)))
 
 (define weight (read-float "What is your weight in lbs? "))
 (define height (read-float "What is your height in inches? "))

@@ -13,14 +13,14 @@
 (define (enter-op)
   (define prompt
     "Please enter the function you would like to use (e.g., +): ")
-  (symbol (input prompt)))
+  (make-symbol (input prompt)))
 
 (define (calculator)
   (let ((op (enter-op))
         (args (enter-args)))
     (print "The result is:" (calculate op args))
     (if (eval
-          (symbol
+          (make-symbol
             (input "Would you like to make another calculation (#t,#f)? ")))
         (calculator)
         (print "Have a nice day!"))))

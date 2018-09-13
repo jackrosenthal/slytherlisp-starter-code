@@ -1,4 +1,5 @@
 import collections.abc as abc
+from typing import Dict
 from functools import partial, update_wrapper
 
 
@@ -37,6 +38,9 @@ class ConsCell:
         False
         >>> a == d
         True
+
+        Should return ``False`` if ``other`` is not an instance of a
+        ``ConsCell``.
         """
         raise NotImplementedError("Deliverable 1")
 
@@ -86,12 +90,20 @@ class ConsList(ConsCell, abc.Sequence):
     @classmethod
     def from_iterable(cls, it):
         """
-        Create a ConsList from an iterable.
+        Create an instance of ``cls`` from an iterable (anything that can go
+        on the right hand side of a ``for`` loop).
 
-        >>> ConsList.from_iterable(iter(range(5)))
-        (list 0 1 2 3 4)
+        >>> lst = ConsList.from_iterable(iter(range(3)))
+        >>> [lst.car, lst.cdr.car, lst.cdr.cdr.car, lst.cdr.cdr.cdr]
+        [0, 1, 2, NIL]
         >>> ConsList.from_iterable([])
         NIL
+
+        Note: Your implementation is subject to the following constraints:
+
+        :Time complexity: O(n), where n is length of ``it``
+        :Space complexity: O(n) ``ConsList`` objects,
+                           O(1) everything else (including stack frames!)
         """
         raise NotImplementedError("Deliverable 1")
 
@@ -120,22 +132,31 @@ class ConsList(ConsCell, abc.Sequence):
         5
         8
 
+        Note: Your implementation is subject to the following constraints:
+
+        :Time complexity: O(1) for each yield
+        :Space complexity: O(1)
         """
         raise NotImplementedError("Deliverable 1")
 
     def cells(self):
         """
-        Iterate over each cell (rather that the ``car`` of each):
+        Iterate over eaCh cell (rather that the ``car`` of each):
 
         >>> lst = [1, 1, 2, 3, 5, 8]
         >>> for cell in ConsList.from_iterable(lst).cells():
-        ...     print(cell.car, cell.cdr)
-        1 (list 1 2 3 5 8)
-        1 (list 2 3 5 8)
-        2 (list 3 5 8)
-        3 (list 5 8)
-        5 (list 8)
-        8 NIL
+        ...     print(cell.car)
+        1
+        1
+        2
+        3
+        5
+        8
+
+        Note: Your implementation is subject to the following constraints:
+
+        :Time complexity: O(1) for each yield
+        :Space complexity: O(1)
         """
         raise NotImplementedError("Deliverable 1")
 
@@ -146,13 +167,19 @@ class ConsList(ConsCell, abc.Sequence):
         >>> lst = [1, 1, 2, 3, 5, 8]
         >>> len(ConsList.from_iterable(lst))
         6
+
+        Note: Your implementation is subject to the following constraints:
+
+        :Time complexity: O(n), where n is the length of the list.
+        :Space complexity: O(1)
         """
         raise NotImplementedError("Deliverable 1")
 
     def __contains__(self, p):
         """
-        Return ``True`` if the list contains an element ``p``,
-        ``False`` otherwise:
+        Return ``True`` if the list contains an element ``p``, ``False``
+        otherwise. A list is said to contain an element ``p`` iff there is any
+        element ``a`` in the list such that ``a == p``.
 
         >>> lst = [1, 1, 2, 3, 5, 8]
         >>> clst = ConsList.from_iterable(lst)
@@ -166,6 +193,11 @@ class ConsList(ConsCell, abc.Sequence):
         False
         >>> 9 in clst
         False
+
+        Note: Your implementation is subject to the following constraints:
+
+        :Time complexity: O(n), where n is the length of the list.
+        :Space complexity: O(1)
         """
         raise NotImplementedError("Deliverable 1")
 
@@ -183,6 +215,11 @@ class ConsList(ConsCell, abc.Sequence):
         2
         1
         1
+
+        Note: Your implementation is subject to the following constraints:
+
+        :Time complexity: O(n), where n is the length of the list.
+        :Space complexity: O(n)
         """
         raise NotImplementedError("Deliverable 1")
 
@@ -223,7 +260,7 @@ class ConsList(ConsCell, abc.Sequence):
 
     def __repr__(self):
         """
-        Represent ourselves in a format evaluable in our language.
+        Represent ourselves in a format evaluable in SlytherLisp.
 
         >>> ConsList.from_iterable([1, 2, 3])
         (list 1 2 3)
@@ -295,7 +332,7 @@ class Boolean:
     t_instance = LispTrue()
     f_instance = LispFalse()
 
-    def __new__(self, v=False):
+    def __new__(cls, v=False):
         """
         There shall only be one true, and one false!
         """
@@ -316,7 +353,7 @@ class SExpression(ConsList):
         return '({})'.format(' '.join(map(repr, self)))
 
 
-def cons(car, cdr):
+def cons(car, cdr) -> ConsCell:
     """
     Factory for cons cell like things. Tries to make a ``ConsList`` or
     ``SExpression`` if it can (if ``cdr`` is...), otherwise makes a
@@ -336,12 +373,15 @@ def cons(car, cdr):
 
 class Variable:
     """
-    A simple wrapper to reference an object. The reference may
-    change using the ``set`` method.
+    A simple wrapper to reference an object. The reference may change using the
+    ``set`` method.
 
-    The reason for this is so that (set! ...) works, even in
-    different environments. Also let's Python's garbage collection
-    do the dirty work for us.
+    The reason for this is so that ``(set! ...)`` works, even in different
+    environments. Also lets Python's garbage collection do the dirty work for
+    us.
+
+    Note: ``Variable`` will never appear in an abstract syntax tree. Its sole
+    purpose is to be used with the ``LexicalVariableStorage``.
     """
     def __init__(self, value):
         self.set(value)
@@ -359,11 +399,11 @@ class LexicalVarStorage:
     * A ``local`` part: a dictionary of the local variables
       in the function.
     """
-    def __init__(self, environ):
+    def __init__(self, environ: Dict[str, Variable]):
         self.environ = environ
         self.local = {}
 
-    def fork(self):
+    def fork(self) -> Dict[str, Variable]:
         """
         Return the union of the ``local`` part and the ``environ``
         part. Should not modify either part.
@@ -372,28 +412,22 @@ class LexicalVarStorage:
         >>> stg = LexicalVarStorage(environ)
         >>> stg.put('y', 12)
         >>> stg.put('z', 13)
-        >>> environ = dict(stg.environ)
-        >>> local = dict(stg.local)
         >>> for k, v in stg.fork().items():
         ...     print(k, v.value)
         x 10
         y 12
         z 13
-        >>> stg.environ == environ      # should not be modified
-        True
-        >>> stg.local == local          # should not be modified
-        True
         """
         raise NotImplementedError("Deliverable 1")
 
-    def put(self, name, value):
+    def put(self, name: str, value) -> None:
         """
         Put a **new** variable in the local environment, giving
         it a value ``value``.
         """
         self.local[name] = Variable(value)
 
-    def __getitem__(self, k):
+    def __getitem__(self, key: str) -> Variable:
         """
         Return a Variable object, first checking the local
         environment, then checking the containing environment,
@@ -410,14 +444,14 @@ class LexicalVarStorage:
         >>> stg['z'].value
         13
         >>> stg['x'].set(11)
-        >>> stg['k'].value
+        >>> stg['foo'].value
         Traceback (most recent call last):
             ...
-        KeyError: "Undefined variable 'k'"
-        >>> stg['k'].set(10)
+        KeyError: "Undefined variable 'foo'"
+        >>> stg['bar'].set(10)
         Traceback (most recent call last):
             ...
-        KeyError: "Undefined variable 'k'"
+        KeyError: "Undefined variable 'bar'"
         """
         raise NotImplementedError("Deliverable 1")
 
@@ -426,18 +460,14 @@ class Quoted:
     """
     A simple wrapper for a quoted element in the abstract syntax tree.
     """
-
-    def __new__(cls, elem):
-        if isinstance(elem, Quoted):
-            # don't double quote!
-            return elem
-        return super().__new__(cls)
-
     def __init__(self, elem):
         self.elem = elem
 
     def __repr__(self):
         return "'{!r}".format(self.elem)
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.elem == other.elem
 
 
 class Symbol(str):
@@ -474,8 +504,6 @@ class UserFunction(Function):
 
     * ``params`` is an s-expression of the parameters, like so:
       (a b c)
-    * ``rest`` is where any additional arguments should be placed,
-      specified by the symbol after the dot in ``params``.
     * ``body`` is an SExpression with the body of the function. The
       result of the last element in the body should be returned when
       the function is called.
@@ -483,25 +511,21 @@ class UserFunction(Function):
       ``LexicalVarStorage`` when the function was created.
 
     """
-    def __init__(self, params, body, environ=None):
+    def __init__(self, params: SExpression, body: SExpression, environ: dict):
         """
+        >>> from slyther.parser import lisp
         >>> f = UserFunction(
-        ...     params=SExpression.from_iterable(
-        ...         map(Symbol, ['a', 'b', 'c', '.', 'd'])),
-        ...     body=SExpression.from_iterable(
-        ...         [SExpression.from_iterable(
-        ...             map(Symbol, ['print', 'a', 'b', 'c'])),
-        ...          SExpression.from_iterable(
-        ...             map(Symbol, ['print', 'd']))]),
+        ...     params=lisp('(a b c)'),
+        ...     body=lisp('((print a b) (print c))'),
         ...     environ={})
         >>> f
-        (lambda (a b c . d) (print a b c) (print d))
+        (lambda (a b c) (print a b) (print c))
         >>> f.params
         (a b c)
-        >>> f.rest
-        d
         >>> f.body
-        ((print a b c) (print d))
+        ((print a b) (print c))
+        >>> f.environ
+        {}
         """
         raise NotImplementedError("Deliverable 3")
 
@@ -509,19 +533,26 @@ class UserFunction(Function):
         """
         Call the function with arguments ``args``.
 
-        Make use of ``lisp_eval``.
+        Make use of ``lisp_eval``. Note that a fully working ``lisp_eval``
+        implementation will require this function to work properly, and this
+        will require a working ``lisp_eval`` to work properly, so you must
+        write both before you can test it.
+
+        Warning: Do not make any attempt to modify ``environ`` here. That is
+        not how lexical scoping works. Instead, construct a new
+        ``LexicalVarStorage`` from the existing environ.
         """
         # avoid circular imports
         from slyther.evaluator import lisp_eval
+
         raise NotImplementedError("Deliverable 3")
 
     def __repr__(self):
         """
         Represent in self-evaluable form.
         """
-        return "(lambda ({}{}) {})".format(
+        return "(lambda ({}) {})".format(
             ' '.join(self.params),
-            ' . {}'.format(self.rest) if self.rest else '',
             ' '.join(repr(x) for x in self.body))
 
 
@@ -552,6 +583,8 @@ class BuiltinCallable(abc.Callable):
         return obj
 
     def __call__(self, *args, **kwargs):
+        # Note: this function was provided for you in the starter code
+        # and you do NOT need to change it.
         result = self.func(*args, **kwargs)
         if result is None:
             return NIL

@@ -3,12 +3,16 @@ import slyther.builtins
 from slyther.types import (BuiltinCallable, NIL, LexicalVarStorage, Variable,
                            Boolean)
 from slyther.evaluator import lisp_eval
-from slyther.parser import tokenize, parse
+from slyther.parser import lex, parse
 
 
 class Interpreter:
     """
-    This type wraps all of the state of an intepreter.
+    This data type state of an interpreter. It works by importing all of your
+    builtin functionality from ``slyther.builtins``, and building an initial
+    ``LexicalVarStorage`` for you.
+
+    An interpreter gets constructed for you in ``slyther.__main__``.
     """
     def __init__(self):
         # load builtins out of slyther.bulitins
@@ -44,6 +48,6 @@ class Interpreter:
         returning the result of the last evaluation.
         """
         r = NIL
-        for expr in parse(tokenize(code)):
+        for expr in parse(lex(code)):
             r = self.eval(expr)
         return r
