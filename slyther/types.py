@@ -141,7 +141,7 @@ class ConsList(ConsCell, abc.Sequence):
 
     def cells(self):
         """
-        Iterate over eaCh cell (rather that the ``car`` of each):
+        Iterate over each cell (rather that the ``car`` of each):
 
         >>> lst = [1, 1, 2, 3, 5, 8]
         >>> for cell in ConsList.from_iterable(lst).cells():
